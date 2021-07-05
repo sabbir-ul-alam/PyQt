@@ -10,25 +10,28 @@ class MainWindowUi(qtw.QWidget):
 
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
-        layout=qtw.QGridLayout()
-        upload_file_button=qtw.QPushButton("Upload")
-        search_text_input=qtw.QLineEdit()
-        search_text_input.setPlaceholderText("Insert your search word")
-        line_number_after_input = qtw.QLineEdit()
-        line_number_after_input.setPlaceholderText("Insert Line Number")
-        line_number_after_input.setValidator(qtg.QIntValidator(1,1))
-        search_button=qtw.QPushButton("Search")
-        clear_button = qtw.QPushButton("Clear")
-        display_result=qtw.QTextBrowser()
+        self.layout=qtw.QGridLayout()
+        self.upload_file_button=qtw.QPushButton("Upload")
+        self.search_text_input=qtw.QLineEdit()
+        self.search_text_input.setPlaceholderText("Insert your search word")
+        self.line_number_after_input = qtw.QLineEdit()
+        self.line_number_after_input.setPlaceholderText("Insert Line Number")
+        self.line_number_after_input.setValidator(qtg.QIntValidator(1,1))
+        self.search_button=qtw.QPushButton("Search")
+        self.clear_button = qtw.QPushButton("Clear")
+        self.display_result=qtw.QPlainTextEdit()
+        self.display_result.setReadOnly(True)
 
-        layout.addWidget(display_result,0,0,5,5)
-        layout.addWidget(upload_file_button,0,6,1,2)
-        layout.addWidget(search_text_input, 1, 6,)
-        layout.addWidget(line_number_after_input ,1, 7)
-        layout.addWidget(search_button ,2, 6)
-        layout.addWidget(clear_button, 2, 7)
 
-        self.setLayout(layout)
+        self.layout.addWidget(self.display_result,0,0,5,5)
+        self.layout.addWidget(self.upload_file_button,0,6,1,2)
+        self.layout.addWidget(self.search_text_input, 1, 6,)
+        self.layout.addWidget(self.line_number_after_input ,1, 7)
+        self.layout.addWidget(self.search_button ,2, 6)
+        self.layout.addWidget(self.clear_button, 2, 7)
+        self.setLayout(self.layout)
+
+        self.upload_file_button.clicked.connect(self.open)
 
         self.showWindow()
 
@@ -36,6 +39,18 @@ class MainWindowUi(qtw.QWidget):
 
     def showWindow(self):
         self.show()
+
+    def open(self):
+        path = qtw.QFileDialog.getOpenFileName(self, '', '',
+                                           'Text files (*.txt *log*)')
+
+        print(path[0])
+        self.display_result.clear()
+        with open(path[0],'r',encoding="utf8") as file:
+            for line in file:
+                self.display_result.appendPlainText(line)
+
+
 
 
 

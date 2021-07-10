@@ -1,15 +1,18 @@
 import sys
 from PyQt5 import  QtWidgets as qtw
+
 from PyQt5 import  QtCore as qtc
 from PyQt5 import  QtGui as qtg
 from PyQt5.QtGui import QTextCursor
+
 import time
 
 
 class MainWindowUi(qtw.QWidget):
-
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
+        self.fileText=""
+        self.countWords=0
         self.layout=qtw.QGridLayout()
         self.upload_file_button=qtw.QPushButton("Upload")
         self.search_text_input=qtw.QLineEdit()
@@ -20,11 +23,9 @@ class MainWindowUi(qtw.QWidget):
         self.search_button=qtw.QPushButton("Search")
         self.clear_button = qtw.QPushButton("Clear")
         self.display_result=qtw.QPlainTextEdit()
-        #self.display_result.setReadOnly(True)
+        self.display_result.setReadOnly(True)
         self.display_result.centerOnScroll()
         self.warning_label=qtw.QLabel()
-
-
         self.layout.addWidget(self.display_result,0,0,5,5)
         self.layout.addWidget(self.upload_file_button,0,6,1,2)
         self.layout.addWidget(self.search_text_input, 1, 6,)
@@ -42,12 +43,18 @@ class MainWindowUi(qtw.QWidget):
 
         self.showWindow()
 
-    def clear_all(self):
-        self.search_text_input.clear()
-        self.line_number_after_input.clear()
+    def clear_all(self,clear_display_only=None):
+        if (clear_display_only):
+            self.display_file(self.fileText)
+        else:
+            self.display_file(self.fileText)
+            self.search_text_input.clear()
+            self.line_number_after_input.clear()
 
-    def show_warning(self):
-        self.warning_label.setText("Insert both search word and line number please")
+
+
+    def show_warning(self,warning):
+        self.warning_label.setText(warning)
         self.warning_label.setWordWrap(True)
         self.warning_label.setStyleSheet('color: red')
         #self.warning_label.setVisible(True)
@@ -56,22 +63,56 @@ class MainWindowUi(qtw.QWidget):
         line_number=self.search_text_input.text()
         if not keyword or not line_number:
            # pass
-            self.show_warning()
+            self.show_warning("Insert both search word and line number please")
         else:
-            pass
+            self.match_words(keyword,line_number)
+
+    def mergeFormatOnWordOrSelection(self, format):
+        cursor = self.display_result.textCursor()
+        if not cursor.hasSelection():
+            cursor.select(qtg.QTextCursor.WordUnderCursor)
+        cursor.mergeCharFormat(format)
+        self.display_result.mergeCurrentCharFormat(format)
+
+    def match_words(self,keyword,line_number):
+        self.clear_all(clear_display_only=True)
+        # indexArray=[i for i in range(len(self.fileText)) if self.fileText.startswith(keyword, i)]
+        # self.display_file(listOfIndex=indexArray,keyword=len(keyword))
+        fmt = qtg.QTextCharFormat()
+        col=qtg.QBrush(qtg.QColor(qtc.Qt.green))
+        fmt.setForeground(col)
+
+        self.display_result.moveCursor(qtg.QTextCursor.Start)
+
+        self.countWords = 0
+        print('start',self.display_result.textCursor())
+        while self.display_result.find(keyword):  # Find whole words
+            print('2',self.display_result.textCursor())
+            self.mergeFormatOnWordOrSelection(fmt)
+            self.countWords += 1
+
+        self.display_result.moveCursor(qtg.QTextCursor.End)
+        print('End', self.display_result.textCursor())
+
+
+
+
+
 
 
     def showWindow(self):
         self.show()
 
 
-    def  display_file(self,line):
-        # text_cursor=self.display_result.textCursor()
-        # text_cursor.movePosition(qtg.QTextCursor.End)
-        # text_cursor.insertText(line)
-        self.display_result.clear()
+    def  display_file(self,txt=None):
+        if txt:
+            self.display_result.clear()
+            self.display_result.setPlainText(txt)
+            self.display_result.moveCursor(qtg.QTextCursor.End)
+        else:
+            pass
 
-        self.display_result.appendPlainText(line)
+
 
 
     def open(self):
@@ -81,7 +122,8 @@ class MainWindowUi(qtw.QWidget):
         if path[0]:
              with open(path[0],'r',encoding="utf8") as file:
                 #for line in file:
-                    self.display_file(file.read())
+                    self.fileText=file.read()
+                    self.display_file(txt=self.fileText)
                     #print(line)
                     #self.display_result.appendPlainText(line)
 

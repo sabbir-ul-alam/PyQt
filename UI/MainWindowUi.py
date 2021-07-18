@@ -7,7 +7,7 @@ from PyQt5 import  QtGui as qtg
 from PyQt5.QtGui import QTextCursor
 from PyQt5.QtCore import pyqtBoundSignal
 
-
+import os
 
 
 
@@ -19,8 +19,10 @@ class MainWindowUi(qtw.QWidget):
         super().__init__(*args,**kwargs)
         self.setWindowTitle("Logger")
         self.resize(800,800)
+        self.setWindowIcon(qtg.QIcon("logger.ico"))
         self.setMaximumWidth(800)
         self.setMinimumHeight(800)
+        self.setAcceptDrops(True)
         self.path=""
         self.file=None
         self.fileText=[]
@@ -39,6 +41,13 @@ class MainWindowUi(qtw.QWidget):
         self.display_result=qtw.QTextEdit()
         self.display_result.setReadOnly(True)
         self.display_result.setAcceptRichText(True)
+        self.clipArt=qtw.QLabel()
+        pixmap = qtg.QPixmap('drop1.png')
+        lol=pixmap.scaled(400,400,qtc.Qt.KeepAspectRatio)
+        self.clipArt.setPixmap(lol)
+        # self.clipArt.setMaximumWidth(500)
+        # self.clipArt.setMaximumHeight(800)
+
         #self.display_result.ensureCursorVisible()
         self.font=qtg.QFont()
         self.font.setPointSize(14)
@@ -47,7 +56,9 @@ class MainWindowUi(qtw.QWidget):
         self.warning_label.setFont(self.font)
         self.layout.setColumnMinimumWidth(0,500)
 
-        self.layout.addWidget(self.display_result,0,0,0,3)
+
+        self.layout.addWidget(self.display_result,0,0,4,3)
+        self.layout.addWidget(self.clipArt, 3,0,1,1,alignment=qtc.Qt.AlignHCenter)
         self.layout.addWidget(self.upload_file_button,0,4,1,2)
         self.layout.addWidget(self.search_text_input, 1, 4,1,1)
         self.layout.addWidget(self.line_number_after_input ,1, 5,1,1)
@@ -64,11 +75,44 @@ class MainWindowUi(qtw.QWidget):
         self.upload_file_button.clicked.connect(self.open)
         self.search_button.clicked.connect(self.search_words)
         self.clear_button.clicked.connect(self.clear_all)
-
         self.scrollBar.sliderPressed.connect(self.sliderPressed)
 
 
+
+
+
         self.show()
+
+    def dragEnterEvent(self, event):
+        print("enter")
+        self.disable_input()
+        self.clear_button.setDisabled(True)
+        event.acceptProposedAction()
+
+
+    def dragLeaveEvent(self, event):
+        print("leave")
+        self.enable_input()
+        self.clear_button.setDisabled(False)
+
+
+    def dropEvent(self, event):
+        self.enable_input()
+        self.clear_button.setDisabled(False)
+        self.fileText = []
+        self.display_result.clear()
+        path=event.mimeData().urls()
+        path=path[0].path()
+        path=path[1:]
+        print(path)
+        if path.endswith('.txt') or path.endswith('.log'):
+            self.fileHandle(path)
+        else:
+            self.show_warning("File extension should be .txt or .log")
+
+
+
+
 
     def sliderPressed(self):
         pass
@@ -91,6 +135,7 @@ class MainWindowUi(qtw.QWidget):
         self.search_button.setDisabled(False)
 
     def clear_all(self,):
+        self.clipArt.show()
 
         try:
          qtc.QCoreApplication.processEvents()
@@ -190,7 +235,9 @@ class MainWindowUi(qtw.QWidget):
 
 
     def  display_file(self,txt=None):
+
         if len(txt)>0:
+            self.clipArt.hide()
             self.display_result.append(txt)
             #self.display_result.moveCursor( qtg.QTextCursor.End)
             qtc.QCoreApplication.processEvents()
@@ -200,27 +247,34 @@ class MainWindowUi(qtw.QWidget):
             self.show_warning("Nothing to show")
 
 
-
+    def fileHandle(self,path):
+        self.clipArt.hide()
+        try:
+            self.file = open(path, 'r', encoding="utf8")
+            self.disable_input()
+            for line in self.file:
+                self.display_file(txt=line)
+                self.fileText.append(line)
+            print("after clear")
+            self.file.close()
+            self.enable_input()
+        except:
+            print("no file found")
+            self.enable_input()
 
     def open(self):
+
 
         self.fileText=[]
         self.display_result.clear()
         path = qtw.QFileDialog.getOpenFileName(self, '', '',
-                                           'Text files (*.txt *log*)')
+                                           'Text files (*.txt;*.log)')
         print(self.path)
         self.path=path[0]
         if path[0]:
             try:
-                self.file=open(path[0],'r',encoding="utf8")
-                self.disable_input()
-                for line in self.file:
-                    self.display_file(txt=line)
-                    self.fileText.append(line)
-                print("after clear")
-                self.file.close()
+                self.fileHandle(path[0])
 
-                self.enable_input()
             except Exception as e:
                 print(e)
                 self.enable_input()
